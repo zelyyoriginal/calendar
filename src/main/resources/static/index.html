@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Календарь</title>
@@ -437,7 +438,10 @@
 
 
 <script>
+    const tg = window.Telegram.WebApp;
 
+    tg.ready();          // сообщает Telegram, что приложение готово
+    tg.expand();         // на весь экран
     const monthNames=[
         "Январь","Февраль","Март","Апрель",
         "Май","Июнь","Июль","Август",
