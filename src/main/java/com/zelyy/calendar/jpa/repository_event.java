@@ -10,6 +10,8 @@ import java.util.List;
 public interface repository_event extends JpaRepository<event, Integer> {
 
     List<event> findEventsByNday(LocalDate nday);
+    List<event> findEventsByNdayBetween(LocalDate start,LocalDate end);
+
 
 
 }
