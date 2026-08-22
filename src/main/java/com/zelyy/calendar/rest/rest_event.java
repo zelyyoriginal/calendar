@@ -23,7 +23,7 @@ public class rest_event {
         service.save();
     }
 
-    @GetMapping("/getBetween")
+    @GetMapping("/getBetween")//ближайшие события (от сегодня + 7 дней)
     public List<event> getBetween(){
         return service.getBetween();
     }
