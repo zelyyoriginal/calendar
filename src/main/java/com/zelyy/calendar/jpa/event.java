@@ -25,6 +25,8 @@ public class event {
 
     @Column(name = "title")
     private String title;
+    @Column(name = "map")
+    private String map;
 
     public int getId() {
         return id;
@@ -60,6 +62,14 @@ public class event {
 
     public String getTitle() {
         return title;
+    }
+
+    public int getGrup_id() {
+        return grup_id;
+    }
+
+    public void setGrup_id(int grup_id) {
+        this.grup_id = grup_id;
     }
 
     public void setTitle(String title) {

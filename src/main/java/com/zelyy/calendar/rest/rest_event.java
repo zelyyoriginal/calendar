@@ -2,11 +2,11 @@ package com.zelyy.calendar.rest;
 
 import com.zelyy.calendar.jpa.event;
 import com.zelyy.calendar.services.service_event;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -18,14 +18,18 @@ public class rest_event {
         this.service = service;
     }
 
-    @PostMapping("save")
-    public void save() {
-        service.save();
+    @PostMapping("api/calendar")
+    public event save(@RequestBody event event) {
+      return service.save(event);
     }
 
     @GetMapping("/getBetween")//ближайшие события (от сегодня + 7 дней)
     public List<event> getBetween(){
         return service.getBetween();
+    }
+    @GetMapping("restapi/getDay/{date}")
+    public List<event> getEventsDey(@PathVariable LocalDate date){
+        return service.getEventDay(date);
     }
 
 }

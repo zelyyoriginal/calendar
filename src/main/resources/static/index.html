@@ -426,7 +426,7 @@
 
         <div class="panel-footer">
 
-            <button id="addEventBtn">
+            <button id="addEventBtn" >
                 ➕ Добавить событие
             </button>
 
@@ -689,7 +689,7 @@
 
         dayEvents.innerHTML="Загрузка...";
 
-        const response=await fetch("/getDay?date="+date);
+        const response=await fetch("/restapi/getDay/"+date);
 
         const list=await response.json();
 
@@ -728,6 +728,19 @@
 
         });
 
+    }
+
+    const addEventBtn = document.getElementById("addEventBtn");
+    addEventBtn.addEventListener("click", addEventf);
+
+    // Или через onclick (но так лучше не делать, смешивать HTML и JS)
+    // <button onclick="addEventf()">Добавить</button>
+
+    function addEventf() {
+        console.log("Кнопка нажата!");
+
+        // Открыть страницу с формой (если она в static/)
+        tg.openLink("/form.html");
     }
 </script>
 

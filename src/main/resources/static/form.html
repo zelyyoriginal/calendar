@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <title>Календарь</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #218838; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th { background: #007bff; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .actions { display: flex; gap: 5px; }
+        .actions button { padding: 4px 10px; font-size: 12px; }
+        .actions .edit { background: #ffc107; color: black; }
+        .actions .edit:hover { background: #e0a800; }
+        .message { padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+        #editId { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>📅 Календарь событий</h2>
+
+    <div id="message" class="message"></div>
+
+    <h3 id="formTitle">➕ Добавить событие</h3>
+    <form id="eventForm">
+        <input type="hidden" id="editId" value="">
+
+        <div class="form-group">
+            <label>ID группы:</label>
+            <input type="number" id="grupId" placeholder="1" required>
+        </div>
+        <div class="form-group">
+            <label>Дата:</label>
+            <input type="date" id="nday" required>
+        </div>
+        <div class="form-group">
+            <label>Время:</label>
+            <input type="time" id="time" placeholder="19:00" required>
+        </div>
+        <div class="form-group">
+            <label>Имя:</label>
+            <input type="text" id="name" placeholder="Иван Петров" required>
+        </div>
+        <div class="form-group">
+            <label>Заголовок:</label>
+            <input type="text" id="title" placeholder="Встреча команды" required>
+        </div>
+
+        <button type="submit" id="submitBtn">💾 Сохранить</button>
+        <button type="button" id="cancelBtn" style="background:#6c757d; margin-left:10px; display:none;" onclick="cancelEdit()">❌ Отмена</button>
+    </form>
+</div>
+<script>
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();          // сообщает Telegram, что приложение готово
+    tg.expand();
+    const API_URL = '/api/calendar';
+
+    // Загрузить события при загрузке страницы
+    document.addEventListener('DOMContentLoaded', loadEvents);
+
+    // Отправка формы
+    document.getElementById('eventForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const editId = document.getElementById('editId').value;
+        if (editId) {
+            updateEvent(parseInt(editId));
+        } else {
+            addEvent();
+        }
+    });
+
+    // ➕ Добавить событие
+    function addEvent() {
+        const event = getFormData();
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event)
+        })
+            .then(response => response.json())
+            .then(() => {
+                showMessage('✅ Событие добавлено!', 'success');
+                resetForm();
+                loadEvents();
+            })
+            .catch(err => {
+                showMessage('❌ Ошибка: ' + err.message, 'error');
+            });
+    }
+
+    // ✏️ Редактировать событие (заполнить форму)
+    function editEvent(id) {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(events => {
+                const event = events.find(e => e.id === id);
+                if (event) {
+                    document.getElementById('editId').value = event.id;
+                    document.getElementById('grupId').value = event.grupId;
+                    document.getElementById('nday').value = event.nday;
+                    document.getElementById('time').value = event.time;
+                    document.getElementById('name').value = event.name;
+                    document.getElementById('title').value = event.title;
+                    document.getElementById('formTitle').textContent = '✏️ Редактировать событие #' + event.id;
+                    document.getElementById('submitBtn').textContent = '🔄 Обновить';
+                    document.getElementById('cancelBtn').style.display = 'inline-block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+    }
+
+    // 🔄 Обновить событие
+    function updateEvent(id) {
+        const event = getFormData();
+        fetch(API_URL + '/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event)
+        })
+            .then(response => response.json())
+            .then(() => {
+                showMessage('✅ Событие обновлено!', 'success');
+                resetForm();
+                loadEvents();
+            })
+            .catch(err => {
+                showMessage('❌ Ошибка: ' + err.message, 'error');
+            });
+    }
+
+    // 🗑️ Удалить событие
+    function deleteEvent(id) {
+        if (!confirm('Удалить событие #' + id + '?')) return;
+        fetch(API_URL + '/' + id, {
+            method: 'DELETE'
+        })
+            .then(() => {
+                showMessage('🗑️ Событие удалено', 'success');
+                loadEvents();
+            })
+            .catch(err => {
+                showMessage('❌ Ошибка: ' + err.message, 'error');
+            });
+    }
+
+    // 📋 Загрузить список событий
+    function loadEvents() {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(events => {
+                const table = document.getElementById('eventsTable');
+                if (events.length === 0) {
+                    table.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#999;">Нет событий</td></tr>';
+                    return;
+                }
+                table.innerHTML = events.map(e => `
+                    <tr>
+                        <td>${e.id}</td>
+                        <td>${e.grupId}</td>
+                        <td>${e.nday}</td>
+                        <td>${e.time}</td>
+                        <td>${e.name}</td>
+                        <td>${e.title}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="edit" onclick="editEvent(${e.id})">✏️</button>
+                                <button class="btn-danger" onclick="deleteEvent(${e.id})">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(err => {
+                document.getElementById('eventsTable').innerHTML =
+                    '<tr><td colspan="7" style="text-align:center; padding:30px; color:red;">Ошибка загрузки</td></tr>';
+            });
+    }
+
+    // 📝 Получить данные из формы
+    function getFormData() {
+        return {
+            grupId: parseInt(document.getElementById('grupId').value),
+            nday: document.getElementById('nday').value,
+            time: document.getElementById('time').value,
+            name: document.getElementById('name').value,
+            title: document.getElementById('title').value
+        };
+    }
+
+    // 🧹 Сбросить форму
+    function resetForm() {
+        document.getElementById('eventForm').reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('formTitle').textContent = '➕ Добавить событие';
+        document.getElementById('submitBtn').textContent = '💾 Сохранить';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+
+    // ❌ Отменить редактирование
+    function cancelEdit() {
+        resetForm();
+        showMessage('Редактирование отменено', 'success');
+    }
+
+    // 💬 Показать сообщение
+    function showMessage(text, type) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = 'message ' + type;
+        setTimeout(() => {
+            msg.className = 'message';
+        }, 4000);
+    }
+</script>
+</body>
+</html>
