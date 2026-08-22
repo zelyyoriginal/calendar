@@ -17,7 +17,7 @@ public class service_event {
         repo = event;
     }
 
-    public void save() {
+    public void testSave() {
         event big = new event();
         LocalDate a = LocalDate.now();
         big.setNday(a);
@@ -26,9 +26,17 @@ public class service_event {
         repo.save(big);
     }
 
+    public event save(event event) {
+       return repo.save(event);
+    }
+
     public List<event> getBetween() {
         LocalDate start = LocalDate.now();
         LocalDate end = start.plusDays(7);
         return repo.findEventsByNdayBetween(start, end);
+    }
+
+    public List<event> getEventDay(LocalDate curent) {
+        return repo.findEventsByNday(curent);
     }
 }
