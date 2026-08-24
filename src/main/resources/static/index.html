@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Календарь</title>
@@ -121,7 +121,7 @@
 
         .event{
             display:flex;
-            gap:12px;
+            gap:5px;
             padding:10px 0;
             border-bottom:1px solid #eee;
         }
@@ -131,14 +131,14 @@
         }
 
         .event-date{
-            width:65px;
-            text-align:center;
+            width:100px;
             flex-shrink:0;
         }
 
         .event-day{
-            font-size:24px;
-            font-weight:bold;
+            font-size:19px;
+            color: #5db4ff;
+
         }
 
         .event-month{
@@ -158,10 +158,11 @@
 
         .event-title{
             font-weight:bold;
+            color:#cccccc;
         }
 
         .event-name{
-            color:#666;
+            color:#a8a671;
             font-size:14px;
         }
 
@@ -170,9 +171,9 @@
             position:fixed;
 
             top:0;
-            right:-420px;
+            right:-370px;
 
-            width:420px;
+            width:370px;
             height:100vh;
 
             background:#17212b;
@@ -277,7 +278,6 @@
 
             transition:.15s;
 
-            cursor:pointer;
 
         }
 
@@ -299,19 +299,21 @@
 
         .eventTitle{
 
-            color:white;
+            color: #cccccc;
 
-            font-size:17px;
+            font-size:14px;
 
             font-weight:600;
 
         }
+        .eventMap{
+            color: #359a91;
+            font-size: 12px;
+        }
 
         .eventTeacher{
 
-            color:#9daec0;
-
-            margin-top:6px;
+            color: #a8a671;
 
             font-size:14px;
 
@@ -424,14 +426,72 @@
 
         </div>
 
-        <div class="panel-footer">
+<!--        <div class="panel-footer">-->
 
-            <button id="addEventBtn" >
-                ➕ Добавить событие
-            </button>
+<!--            <button id="addEventBtn" >-->
+<!--                ➕ Добавить событие-->
+<!--            </button>-->
+<!--        </div>-->
 
-        </div>
+    </div>
 
+
+    <style>
+        * { box-sizing: border-box; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th { background: #007bff; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .actions { display: flex; gap: 5px; }
+        .actions button { padding: 4px 10px; font-size: 12px; }
+        .actions .edit { background: #ffc107; color: black; }
+        .actions .edit:hover { background: #e0a800; }
+        .message { padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+        #editId { display: none; }
+    </style>
+
+    <div class="card" id="form" style="margin-top: 15px;">
+
+        <div id="message" class="message"></div>
+
+        <h3 id="formTitle">➕ Добавить событие</h3>
+        <form id="eventForm">
+            <input type="hidden" id="editId" value="">
+
+            <div class="form-group">
+                <input type="number" id="grupId" hidden>
+            </div>
+            <div class="form-group">
+                <label>Дата:</label>
+                <input type="date" id="nday" required>
+            </div>
+            <div class="form-group">
+                <label>Время:</label>
+                <input type="time" id="time" placeholder="19:00" required>
+            </div>
+            <div class="form-group">
+                <label>название:</label>
+                <input type="text" id="name" placeholder="фестиваль" required>
+            </div>
+            <div class="form-group">
+                <label>описание:</label>
+                <input type="text" id="titles" required>
+            </div>
+            <div class="form-group">
+                <label>адрес:</label>
+                <input type="text" id="map" placeholder="улица" required>
+            </div>
+
+            <button type="submit" id="submitBtn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">💾 Сохранить</button>
+            <button type="button" id="cancelBtn" style="background:#6c757d; margin-left:10px; display:none;" onclick="cancelEdit()">❌ Отмена</button>
+        </form>
     </div>
 
 </div>
@@ -442,6 +502,62 @@
 
     tg.ready();          // сообщает Telegram, что приложение готово
     tg.expand();         // на весь экран
+    const a = tg.initDataUnsafe;
+    const groupId = a.start_param;
+    const API_URL = '/api/calendar';
+
+    // Отправка формы
+    document.getElementById('eventForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const editId = document.getElementById('editId').value;
+        if (editId) {
+            updateEvent(parseInt(editId));
+        } else {
+            addEvent();
+        }
+    });
+    // ➕ Добавить событие
+    function addEvent() {
+        const event = getFormData();
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event)
+        })
+            .then(response => response.json())
+            .then(() => {
+                showMessage('✅ Событие добавлено!', 'success');
+            })
+            .catch(err => {
+                showMessage('❌ Ошибка: ' + err.message, 'error');
+            });
+    }
+
+    function getFormData() {
+        return {
+            grupId: groupId,
+            nday: document.getElementById('nday').value,
+            time: document.getElementById('time').value,
+            name: document.getElementById('name').value,
+            title: document.getElementById('titles').value,
+            map: document.getElementById('map').value
+        };
+    }
+
+    // 💬 Показать сообщение
+    function showMessage(text, type) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = 'message ' + type;
+        setTimeout(() => {
+            msg.className = 'message';
+        }, 4000);
+    }
+
+
+
+
+
     const monthNames=[
         "Январь","Февраль","Март","Апрель",
         "Май","Июнь","Июль","Август",
@@ -450,14 +566,24 @@
 
     let current=new Date();
 
-    let eventDates=[
+    let eventDatesResult=[
         "2026-08-05",
         "2026-08-07",
         "2026-08-18",
         "2026-08-28"
     ];
+    async function eventDates(){
+        var responsePromise = await fetch(`${API_URL}?groupId=${encodeURIComponent(groupId)}`);
+        if(!responsePromise.ok){
+            throw new Error("Ошибка загрузки");
+        }
+        eventDatesResult = await responsePromise.json();
+    }
 
-    draw();
+
+    eventDates().then(()=>{draw();});
+
+
 
     function draw(){
 
@@ -516,7 +642,8 @@
                 d.classList.add("today");
             }
 
-            if(eventDates.includes(date)){
+
+            if(eventDatesResult.includes(date)){
 
                 let dot=document.createElement("div");
 
@@ -576,34 +703,11 @@
     }
 
 
-    const weekEvents = [
 
-        {
-            nday:"2026-08-05",
-            time:"19:00",
-            title:"Java Meetup",
-            name:"Discord"
-        },
-
-        {
-            nday:"2026-08-06",
-            time:"21:00",
-            title:"Обсуждение Spring",
-            name:"Telegram"
-        },
-
-        {
-            nday:"2026-08-08",
-            time:"15:30",
-            title:"Созвон",
-            name:"Команда"
-        }
-
-    ];
     var response;
-    async function getBetWeen(){
+    async function getBetWeen(){//события недели
 
-        var responsePromise = await fetch("getBetween");
+        var responsePromise = await fetch(`getBetween?groupId=${encodeURIComponent(groupId)}`);
         if(!responsePromise.ok){
             throw new Error("Ошибка загрузки");
         }
@@ -625,17 +729,22 @@
         <div class="event">
 
             <div class="event-date">
-                <div class="event-day">${d.getDate()}</div>
-                <div class="event-month">
-                    ${monthNames[d.getMonth()].substring(0,3)}
-                </div>
+                <div class="event-day">${d.getDate()} ${monthNames[d.getMonth()].substring(0,3)}  ${e.time}</div>
+           <div style=" cursor: pointer; text-decoration: underline;"
+                class="eventMap"
+                onclick="window.open('https://yandex.ru/maps/?text=' +
+                encodeURIComponent('${e.map}'), '_blank')"
+                >📍 ${e.map}</div>
             </div>
 
             <div class="event-info">
-                <div class="event-time">${e.time}</div>
-                <div class="event-title">${e.title}</div>
-                <div class="event-name">${e.name}</div>
+
+
+                <div style="margin-top: 2px;" class="event-name">${e.name}</div>
+                <div style="margin-top: 2px;" class="event-title">${e.title}</div>
+
             </div>
+
 
         </div>
         `;
@@ -684,12 +793,36 @@
         panel.classList.remove("open");
 
     }
+    function confirmOption(id,name){
 
+        const confirmation = window.confirm(`удалить событие - ${name}`)
+        if(confirmation){
+            fetch(API_URL,{
+                method:'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(id)
+            })
+        }
+        else{
+
+        }
+    }
     async function loadDayEvents(date){
 
         dayEvents.innerHTML="Загрузка...";
 
-        const response=await fetch("/restapi/getDay/"+date);
+        const response=await fetch(API_URL+"/day",{
+            method:"POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                date: date,
+                id: groupId
+            })
+        });
 
         const list=await response.json();
 
@@ -706,25 +839,35 @@
 
         list.forEach(e=>{
 
+
             dayEvents.innerHTML+=`
 
         <div class="event">
-
-            <div class="eventTime">
+        <div>
+                <div class="eventTime">
                 ${e.time}
-            </div>
-
-            <div class="eventTitle">
-                ${e.title}
-            </div>
-
-            <div class="eventTeacher">
-                ${e.name}
-            </div>
+                </div>
+                <div class="eventTeacher">
+                 ${e.name}
+                </div>
+                <div class="eventTitle">
+                    ${e.title}
+                </div>
 
         </div>
 
+            <div style=" cursor: pointer;
+                 text-decoration: underline;"
+                 class="eventMap"
+                 onclick="window.open('https://yandex.ru/maps/?text=' + encodeURIComponent('${e.map}'), '_blank')">
+                 📍${e.map}</div>
+
+            <button onclick="confirmOption(${e.id}, '${e.name}')">X</button>
+        </div>
+
         `;
+
+
 
         });
 
@@ -740,7 +883,10 @@
         console.log("Кнопка нажата!");
 
         // Открыть страницу с формой (если она в static/)
-        tg.openLink("/form.html");
+
+        // tg.openLink("/form.html");
+        //tg.openTelegramLink("/form.html")
+        document.getElementById("form").hidden = false;
     }
 </script>
 

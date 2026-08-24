@@ -5,14 +5,14 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-public class event {
+public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int id;
 
     @Column(name = "grup_id")
-    private int grup_id;
+    private int grupId;
 
     @Column(name = "nday")
     private LocalDate nday;
@@ -25,8 +25,17 @@ public class event {
 
     @Column(name = "title")
     private String title;
+
     @Column(name = "map")
     private String map;
+
+    public String getMap() {
+        return map;
+    }
+
+    public void setMap(String map) {
+        this.map = map;
+    }
 
     public int getId() {
         return id;
@@ -64,12 +73,12 @@ public class event {
         return title;
     }
 
-    public int getGrup_id() {
-        return grup_id;
+    public int getGrupId() {
+        return grupId;
     }
 
-    public void setGrup_id(int grup_id) {
-        this.grup_id = grup_id;
+    public void setGrupId(int grup_id) {
+        this.grupId = grup_id;
     }
 
     public void setTitle(String title) {

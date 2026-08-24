@@ -1,13 +1,15 @@
 package com.zelyy.calendar.services;
 
-import com.zelyy.calendar.jpa.event;
+import com.zelyy.calendar.jpa.Event;
 import com.zelyy.calendar.jpa.repository_event;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class service_event {
 
     public repository_event repo;
@@ -17,26 +19,36 @@ public class service_event {
         repo = event;
     }
 
-    public void testSave() {
-        event big = new event();
-        LocalDate a = LocalDate.now();
-        big.setNday(a);
-        big.setName("большие гонки");
-        big.setTitle("какоето долгое описание");
-        repo.save(big);
-    }
-
-    public event save(event event) {
+    public Event save(Event event) {
        return repo.save(event);
     }
 
-    public List<event> getBetween() {
+    public List<Event> getBetween(int groupId) {
         LocalDate start = LocalDate.now();
         LocalDate end = start.plusDays(7);
-        return repo.findEventsByNdayBetween(start, end);
+        List<Event> result = repo.findEventsByGrupIdAndNdayBetween(groupId,start,end);
+
+      result.sort((a,b)-> a.getNday().compareTo(b.getNday()));
+      return result;
     }
 
-    public List<event> getEventDay(LocalDate curent) {
-        return repo.findEventsByNday(curent);
+    public List<Event> getEventDay(LocalDate curent, int id) {
+
+        return repo.findEventsByGrupIdAndNday(id,curent);
     }
+
+
+
+
+    public List<LocalDate> getDay(int groupId) {
+      List<Event> events = repo.findEventsByGrupId(groupId);
+
+      return events.stream().map(a->a.getNday()).toList();
+    }
+
+    public void deleteEvent(Integer id) {
+        repo.removeEventsById(id);
+    }
+
+
 }
