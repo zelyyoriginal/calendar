@@ -120,7 +120,7 @@
         }
 
         .event{
-            display:flex;
+            display:grid;
             gap:5px;
             padding:10px 0;
             border-bottom:1px solid #eee;
@@ -364,6 +364,17 @@
             background:#4aa2f5;
 
         }
+        .delete{
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 30%;
+            background: #00000047;
+            color: #cf3636;
+            cursor: pointer;
+            font-size: 22px;
+            padding: revert;
+        }
     </style>
 </head>
 <body>
@@ -517,21 +528,7 @@
         }
     });
     // ➕ Добавить событие
-    function addEvent() {
-        const event = getFormData();
-        fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(event)
-        })
-            .then(response => response.json())
-            .then(() => {
-                showMessage('✅ Событие добавлено!', 'success');
-            })
-            .catch(err => {
-                showMessage('❌ Ошибка: ' + err.message, 'error');
-            });
-    }
+
 
     function getFormData() {
         return {
@@ -579,12 +576,6 @@
         }
         eventDatesResult = await responsePromise.json();
     }
-
-
-    eventDates().then(()=>{draw();});
-
-
-
     function draw(){
 
         const year=current.getFullYear();
@@ -661,7 +652,7 @@
 
                 d.classList.add("selected");
 
-                    openDayPanel(date)
+                openDayPanel(date)
 
             };
 
@@ -685,6 +676,76 @@
         }
 
     }
+    async function drawEvents(){
+        var response;
+        const list=document.getElementById("eventList");
+        const fragment = document.createDocumentFragment()
+
+        response = await getBetWeen();
+        response.forEach(e=>{
+            const d = new Date(e.nday);
+
+            // 1. Создаем основной контейнер события
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event';
+
+            // 2. Блок с датой
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'event-date';
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'event-day';
+            dayDiv.textContent = `${d.getDate()} ${monthNames[d.getMonth()].substring(0,3)} ${e.time}`;
+
+            const mapDiv = document.createElement('div');
+            mapDiv.className = 'eventMap';
+            mapDiv.style.cssText = 'cursor: pointer; text-decoration: underline;';
+            mapDiv.textContent = `📍 ${e.map}`;
+            mapDiv.onclick = () => {
+                window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(e.map)}`, '_blank');
+            };
+
+            dateDiv.appendChild(dayDiv);
+            dateDiv.appendChild(mapDiv);
+
+            // 3. Блок с информацией
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'event-info';
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'event-name';
+            nameDiv.style.marginTop = '2px';
+            nameDiv.textContent = e.name;
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'event-title';
+            titleDiv.style.marginTop = '2px';
+            titleDiv.textContent = e.title;
+
+            infoDiv.appendChild(nameDiv);
+            infoDiv.appendChild(titleDiv);
+
+            // 4. Собираем всё вместе
+            eventDiv.appendChild(dateDiv);
+            eventDiv.appendChild(infoDiv);
+
+            // 5. Добавляем в фрагмент
+            fragment.appendChild(eventDiv);
+        });
+
+        // 6. Один раз обновляем DOM
+        list.innerHTML = '';
+        list.appendChild(fragment);
+    }
+
+    async function redrow(){
+        eventDates()
+            .then(()=>{draw()})
+            .then(()=>{drawEvents()});
+    }
+
+    redrow();
+
 
     function prevMonth(){
 
@@ -693,7 +754,6 @@
         draw();
 
     }
-
     function nextMonth(){
 
         current.setMonth(current.getMonth()+1);
@@ -701,10 +761,6 @@
         draw();
 
     }
-
-
-
-    var response;
     async function getBetWeen(){//события недели
 
         var responsePromise = await fetch(`getBetween?groupId=${encodeURIComponent(groupId)}`);
@@ -713,47 +769,6 @@
         }
         return await responsePromise.json();
     }
-    {
-    drawEvents();
-    async function drawEvents(){
-
-        const list=document.getElementById("eventList");
-
-        list.innerHTML="";
-        response = await getBetWeen();
-        response.forEach(e=>{
-
-            const d=new Date(e.nday);
-
-            list.innerHTML+=`
-        <div class="event">
-
-            <div class="event-date">
-                <div class="event-day">${d.getDate()} ${monthNames[d.getMonth()].substring(0,3)}  ${e.time}</div>
-           <div style=" cursor: pointer; text-decoration: underline;"
-                class="eventMap"
-                onclick="window.open('https://yandex.ru/maps/?text=' +
-                encodeURIComponent('${e.map}'), '_blank')"
-                >📍 ${e.map}</div>
-            </div>
-
-            <div class="event-info">
-
-
-                <div style="margin-top: 2px;" class="event-name">${e.name}</div>
-                <div style="margin-top: 2px;" class="event-title">${e.title}</div>
-
-            </div>
-
-
-        </div>
-        `;
-
-        });
-
-    }
-    }
-
     const panel=document.getElementById("dayPanel");
 
     const panelDate=document.getElementById("panelDate");
@@ -793,7 +808,23 @@
         panel.classList.remove("open");
 
     }
-    function confirmOption(id,name){
+    function addEvent() {
+        const event = getFormData();
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event)
+        })
+            .then(response => response.json())
+            .then(() => {
+                showMessage('✅ Событие добавлено!', 'success');
+                redrow()
+            })
+            .catch(err => {
+                showMessage('❌ Ошибка: ' + err.message, 'error');
+            });
+    }
+    function confirmOption(id,name,date){
 
         const confirmation = window.confirm(`удалить событие - ${name}`)
         if(confirmation){
@@ -808,7 +839,11 @@
         else{
 
         }
+        loadDayEvents(date)
+        redrow()
+
     }
+
     async function loadDayEvents(date){
 
         dayEvents.innerHTML="Загрузка...";
@@ -862,7 +897,7 @@
                  onclick="window.open('https://yandex.ru/maps/?text=' + encodeURIComponent('${e.map}'), '_blank')">
                  📍${e.map}</div>
 
-            <button onclick="confirmOption(${e.id}, '${e.name}')">X</button>
+            <button class="delete" onclick="confirmOption(${e.id}, '${e.name}','${date}')">X</button>
         </div>
 
         `;
@@ -871,22 +906,6 @@
 
         });
 
-    }
-
-    const addEventBtn = document.getElementById("addEventBtn");
-    addEventBtn.addEventListener("click", addEventf);
-
-    // Или через onclick (но так лучше не делать, смешивать HTML и JS)
-    // <button onclick="addEventf()">Добавить</button>
-
-    function addEventf() {
-        console.log("Кнопка нажата!");
-
-        // Открыть страницу с формой (если она в static/)
-
-        // tg.openLink("/form.html");
-        //tg.openTelegramLink("/form.html")
-        document.getElementById("form").hidden = false;
     }
 </script>
 
